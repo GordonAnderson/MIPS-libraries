@@ -9,6 +9,13 @@
 
 	Created by Ivan Seidel Gomes, March, 2013.
 	Released into the public domain.
+	
+	Functionality added by Gordon Anderson, July 2015
+	1.) Added function to name a thread and retrive a threads name
+	2.) Added get ID
+	3.) Added thread run time calculation and ability to read the run time
+	4.) Fixed the next run point in time to not include the processes run time,
+	    this may have been a mistake?
 */
 
 #ifndef Thread_h
@@ -35,6 +42,11 @@ protected:
 
 	// Scheduled run in Ms (MUST BE CACHED)	
 	long _cached_next_run;
+	
+	// Variables used to determine the tasks run time in millsecs
+	unsigned long startTime;
+	unsigned long runTime;
+	String Name;
 
 	/*
 		IMPORTANT! Run after all calls to run()
@@ -62,6 +74,15 @@ public:
 
 	Thread(void (*callback)(void) = NULL, long _interval = 0);
 
+    // Returns the run time in millisec for the last task call
+    unsigned long runTimeMs(void);
+
+    void setName(char *);
+    const char *getName(void);
+    
+    int getID(void);
+    long getInterval(void);
+    
 	// Set the desired interval for calls, and update _cached_next_run
 	virtual void setInterval(long _interval);
 

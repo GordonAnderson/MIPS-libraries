@@ -497,7 +497,8 @@ uint32_t MIPStimer::getRAcounter()
 */
 void TC0_Handler()
 {
-	int i = TC_GetStatus(TC0, 0);
+	int i = TC0->TC_CHANNEL[0].TC_SR;
+//	int i = TC_GetStatus(TC0, 0);
 	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[0]();
 	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[0]();
 	if(i & TC_SR_CPCS) MIPStimer::callbacks[0]();
@@ -518,14 +519,14 @@ void TC2_Handler()
 }
 void TC3_Handler()
 {
-	int i = TC_GetStatus(TC1, 0);
+	int i = TC1->TC_CHANNEL[0].TC_SR;
 	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[3]();
 	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[3]();
 	if(i & TC_SR_CPCS) MIPStimer::callbacks[3]();
 }
 void TC4_Handler()
 {
-	int i = TC_GetStatus(TC1, 1);
+	int i = TC1->TC_CHANNEL[1].TC_SR;
 	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[4]();
 	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[4]();
 	if(i & TC_SR_CPCS) MIPStimer::callbacks[4]();

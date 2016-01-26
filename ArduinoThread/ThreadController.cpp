@@ -33,7 +33,6 @@ void ThreadController::run(){
 			}
 		}
 	}
-
 	// ThreadController extends Thread, so we should flag as runned thread
 	runned();
 }
@@ -113,3 +112,16 @@ Thread* ThreadController::get(int index){
 
 	return NULL;
 }
+
+Thread* ThreadController::get(const char *name)
+{
+	for(int i = 0; i < MAX_THREADS; i++)
+	{
+		if(thread[i] != NULL)
+		{
+			if(strcmp(name,(char *)thread[i]->getName())) return thread[i];
+		}
+	}
+	return NULL;
+}
+

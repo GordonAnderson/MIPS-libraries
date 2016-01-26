@@ -48,6 +48,8 @@ public:
 	// Return the I Thread on the array
 	// Returns NULL if none found
 	Thread* get(int index);
+	// Returns thread pointer by name
+	Thread* get(const char *name);
 };
 
 #endif

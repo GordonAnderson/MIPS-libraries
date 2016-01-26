@@ -15,6 +15,16 @@ Thread::Thread(void (*callback)(void), long _interval){
 	setInterval(_interval);
 };
 
+void Thread::setName(char *name)
+{
+   Name = name;
+}
+
+const char *Thread::getName(void)
+{
+   return(Name.c_str());
+}
+
 void Thread::runned(long time){
 	// If less than 0, than get current ticks
 	if(time < 0)
@@ -48,10 +58,27 @@ void Thread::onRun(void (*callback)(void)){
 	_onRun = callback;
 }
 
+int Thread::getID(void)
+{
+   return(ThreadID);
+}
+
+long Thread::getInterval(void)
+{
+   return(interval);
+}
+
+unsigned long Thread::runTimeMs(void)
+{
+   return runTime;
+}
+
 void Thread::run(){
 	runned();
+	startTime = millis();
 	if(_onRun != NULL)
 		_onRun();
+	runTime = millis() - startTime;
 
 	// Update last_run and _cached_next_run
 //	runned();

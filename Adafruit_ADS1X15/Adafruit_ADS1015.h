@@ -37,7 +37,7 @@
     CONVERSION DELAY (in mS)
     -----------------------------------------------------------------------*/
     #define ADS1015_CONVERSIONDELAY         (1)
-    #define ADS1115_CONVERSIONDELAY         (8)
+    #define ADS1115_CONVERSIONDELAY         (3)
 /*=========================================================================*/
 
 /*=========================================================================
@@ -138,6 +138,7 @@ protected:
   void      setGain(adsGain_t gain);
   adsGain_t getGain(void);
   uint8_t	getStatus(void);
+  //uint8_t   status;
 
  private:
 };

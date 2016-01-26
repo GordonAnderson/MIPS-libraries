@@ -45,7 +45,7 @@ Thread* myThread = new Thread();
 
 ```c++
 myThread.enabled = true; // Default enabled value is true
-myThread.setInterval(10); // Setts the wanted interval to be 10ms
+myThread.setInterval(10); // Sets the wanted interval to be 10ms
 /*
 	This is useful for debugging
 	(Thread Name is disabled by default, to use less memory)
