@@ -119,7 +119,7 @@ Thread* ThreadController::get(const char *name)
 	{
 		if(thread[i] != NULL)
 		{
-			if(strcmp(name,(char *)thread[i]->getName())) return thread[i];
+			if(strcmp(name,(char *)thread[i]->getName()) == 0) return thread[i];
 		}
 	}
 	return NULL;

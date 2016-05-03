@@ -4,7 +4,7 @@
 #include <Arduino.h>
 #include <inttypes.h>
 
-#define MaxDIhandlers  8
+#define MaxDIhandlers  20
 
 class DIhandler
 {

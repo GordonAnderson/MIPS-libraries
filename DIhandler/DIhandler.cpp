@@ -24,7 +24,7 @@ DIhandler::DIhandler(void)
    di = 0;
    mode = -1;
    userISR = NULL;
-   if(NumHandlers < 10) handlers[NumHandlers++] = this;
+   if(NumHandlers < MaxDIhandlers) handlers[NumHandlers++] = this;
 }
 
 DIhandler::~DIhandler(void)
@@ -89,9 +89,10 @@ bool DIhandler::activeLevel(void)
    
    Index = di - 'Q';
    if((di==0) || (mode==-1)) return true;
-   if(mode == CHANGE) return true;
-   if((digitalRead(DIpin[Index]) == HIGH) && ((mode == RISING) || (mode == HIGH))) return true;
-   if((digitalRead(DIpin[Index]) == LOW) && ((mode == FALLING) || (mode == LOW))) return true;
+   i = digitalRead(DIpin[Index]);
+   if((i == HIGH) && (mode == CHANGE)) return true;
+   if((i == HIGH) && ((mode == RISING) || (mode == HIGH))) return true;
+   if((i == LOW) && ((mode == FALLING) || (mode == LOW))) return true;
    return false;
 }
 
@@ -101,13 +102,15 @@ void DI_Generic_ISR(int Index)
    
    for(i=0;i<MaxDIhandlers;i++)
    {
-      if(DIhandler::handlers != NULL)
+      if(DIhandler::handlers[i] != NULL)  // was, if(DIhandler::handlers != NULL)
       {
          if(DIhandler::handlers[i]->di != ('Q'+Index)) continue; 
          if(DIhandler::handlers[i]->userISR  == NULL) continue;
          if(DIhandler::handlers[i]->mode == CHANGE) DIhandler::handlers[i]->userISR();
-         else if(DIhandler::handlers[i]->mode == HIGH) DIhandler::handlers[i]->userISR();
-         else if(DIhandler::handlers[i]->mode == LOW) DIhandler::handlers[i]->userISR();
+//         else if(DIhandler::handlers[i]->mode == HIGH) DIhandler::handlers[i]->userISR();
+//         else if(DIhandler::handlers[i]->mode == LOW) DIhandler::handlers[i]->userISR();
+         else if((DIhandler::handlers[i]->mode == HIGH) && (digitalRead(DIhandler::DIpin[Index]) == HIGH)) DIhandler::handlers[i]->userISR();
+         else if((DIhandler::handlers[i]->mode == LOW) && (digitalRead(DIhandler::DIpin[Index]) == LOW)) DIhandler::handlers[i]->userISR();
          else if((DIhandler::handlers[i]->mode == RISING) && (digitalRead(DIhandler::DIpin[Index]) == HIGH)) DIhandler::handlers[i]->userISR();
          else if((DIhandler::handlers[i]->mode == FALLING) && (digitalRead(DIhandler::DIpin[Index]) == LOW)) DIhandler::handlers[i]->userISR();
       }
