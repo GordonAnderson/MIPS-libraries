@@ -127,6 +127,7 @@ class Adafruit_ILI9340 : public Adafruit_GFX {
   Adafruit_ILI9340(uint8_t CS, uint8_t RS, uint8_t RST);
 
   void     begin(void),
+  		   disableDisplay(bool state),
            setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1),
            pushColor(uint16_t color),
            fillScreen(uint16_t color),
@@ -156,6 +157,7 @@ class Adafruit_ILI9340 : public Adafruit_GFX {
 
  private:
   uint8_t  tabcolor;
+  bool     disable;
 
 
 

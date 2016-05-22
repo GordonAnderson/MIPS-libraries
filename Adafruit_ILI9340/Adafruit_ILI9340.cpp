@@ -57,6 +57,7 @@ Adafruit_ILI9340::Adafruit_ILI9340(uint8_t cs, uint8_t dc, uint8_t rst) : Adafru
 }
 
 void Adafruit_ILI9340::spiwrite(uint8_t c) {
+  if(disable) return;
 
   //Serial.print("0x"); Serial.print(c, HEX); Serial.print(", ");
 
@@ -91,6 +92,7 @@ void Adafruit_ILI9340::spiwrite(uint8_t c) {
 
 
 void Adafruit_ILI9340::writecommand(uint8_t c) {
+  if(disable) return;
   CLEAR_BIT(dcport, dcpinmask);
   //digitalWrite(_dc, LOW);
   CLEAR_BIT(clkport, clkpinmask);
@@ -106,6 +108,7 @@ void Adafruit_ILI9340::writecommand(uint8_t c) {
 
 
 void Adafruit_ILI9340::writedata(uint8_t c) {
+  if(disable) return;
   SET_BIT(dcport,  dcpinmask);
   //digitalWrite(_dc, HIGH);
   CLEAR_BIT(clkport, clkpinmask);
@@ -133,6 +136,7 @@ void Adafruit_ILI9340::commandList(uint8_t *addr) {
   uint8_t  numCommands, numArgs;
   uint16_t ms;
 
+  if(disable) return;
   numCommands = pgm_read_byte(addr++);   // Number of commands to follow
   while(numCommands--) {                 // For each command...
     writecommand(pgm_read_byte(addr++)); //   Read, issue command
@@ -151,6 +155,10 @@ void Adafruit_ILI9340::commandList(uint8_t *addr) {
   }
 }
 
+void Adafruit_ILI9340::disableDisplay(bool state)
+{
+   disable = state;
+}
 
 void Adafruit_ILI9340::begin(void) {
   pinMode(_rst, OUTPUT);
@@ -168,6 +176,7 @@ void Adafruit_ILI9340::begin(void) {
   cspinmask = digitalPinToBitMask(_cs);
   dcpinmask = digitalPinToBitMask(_dc);
 
+  disable = false;
   if(hwSPI) { // Using hardware SPI
     SPI.begin();
 #ifdef __AVR__
