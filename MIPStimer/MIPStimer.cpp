@@ -69,6 +69,12 @@ MIPStimer MIPStimer::getAvailable()
 	return MIPStimer(0);
 }
 
+MIPStimer MIPStimer::setPriority(uint8_t pri)
+{
+   NVIC_SetPriority(Timers[timer].irq, pri);
+   return *this;
+}
+
 MIPStimer MIPStimer::attachInterrupt(void (*isr)())
 {
 	// Links the function passed as argument to the timer of the object
@@ -252,8 +258,10 @@ MIPStimer MIPStimer::setTIOAeffect(uint32_t count, uint32_t effect)
 
 MIPStimer MIPStimer::setRA(uint32_t count)
 {
+    static Timer t;
+    
 	// Get current timer configuration
-	Timer t = Timers[timer];
+	t = Timers[timer];
 
 	t.tc->TC_CHANNEL[t.channel].TC_RA = count;
 	return *this;
@@ -261,8 +269,10 @@ MIPStimer MIPStimer::setRA(uint32_t count)
 
 MIPStimer MIPStimer::incRA(uint32_t count)
 {
+    static Timer t;
+    
 	// Get current timer configuration
-	Timer t = Timers[timer];
+	t = Timers[timer];
 
 	t.tc->TC_CHANNEL[t.channel].TC_RA += count;
 	return *this;
@@ -304,8 +314,10 @@ MIPStimer MIPStimer::setTIOBeffect(uint32_t count, uint32_t effect)
 
 MIPStimer MIPStimer::setRB(uint32_t count)
 {
+    static Timer t;
+    
 	// Get current timer configuration
-	Timer t = Timers[timer];
+	t = Timers[timer];
 
 	t.tc->TC_CHANNEL[t.channel].TC_RB = count;
 	return *this;
@@ -313,8 +325,10 @@ MIPStimer MIPStimer::setRB(uint32_t count)
 
 MIPStimer MIPStimer::incRB(uint32_t count)
 {
+    static Timer t;
+    
 	// Get current timer configuration
-	Timer t = Timers[timer];
+	t = Timers[timer];
 
 	t.tc->TC_CHANNEL[t.channel].TC_RB += count;
 	return *this;
@@ -322,8 +336,10 @@ MIPStimer MIPStimer::incRB(uint32_t count)
 
 MIPStimer MIPStimer::setRC(uint32_t count)
 {
+    static Timer t;
+    
 	// Get current timer configuration
-	Timer t = Timers[timer];
+	t = Timers[timer];
 
 	t.tc->TC_CHANNEL[t.channel].TC_RC = count;
 	return *this;
@@ -497,64 +513,81 @@ uint32_t MIPStimer::getRAcounter()
 */
 void TC0_Handler()
 {
-	int i = TC0->TC_CHANNEL[0].TC_SR;
-//	int i = TC_GetStatus(TC0, 0);
+    static int i;
+
+	i = TC0->TC_CHANNEL[0].TC_SR;
 	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[0]();
 	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[0]();
 	if(i & TC_SR_CPCS) MIPStimer::callbacks[0]();
 }
 void TC1_Handler()
 {
-	int i = TC_GetStatus(TC0, 1);
+    static int i;
+
+	i = TC0->TC_CHANNEL[1].TC_SR;
 	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[1]();
 	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[1]();
 	if(i & TC_SR_CPCS) MIPStimer::callbacks[1]();
 }
 void TC2_Handler()
 {
-	int i = TC_GetStatus(TC0, 2);
+    static int i;
+
+	i = TC0->TC_CHANNEL[2].TC_SR;
 	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[2]();
 	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[2]();
 	if(i & TC_SR_CPCS) MIPStimer::callbacks[2]();
 }
 void TC3_Handler()
 {
-	int i = TC1->TC_CHANNEL[0].TC_SR;
+    static int i;
+
+	i = TC1->TC_CHANNEL[0].TC_SR;
 	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[3]();
 	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[3]();
 	if(i & TC_SR_CPCS) MIPStimer::callbacks[3]();
 }
 void TC4_Handler()
 {
-	int i = TC1->TC_CHANNEL[1].TC_SR;
+    static int i;
+
+	i = TC1->TC_CHANNEL[1].TC_SR;
 	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[4]();
 	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[4]();
 	if(i & TC_SR_CPCS) MIPStimer::callbacks[4]();
 }
 void TC5_Handler()
 {
-	int i = TC_GetStatus(TC1, 2);
+    static int i;
+
+	i = TC1->TC_CHANNEL[2].TC_SR;
 	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[5]();
 	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[5]();
 	if(i & TC_SR_CPCS) MIPStimer::callbacks[5]();
 }
 void TC6_Handler()
 {
-	int i = TC_GetStatus(TC2, 0);
+    static int i;
+
+	i = TC2->TC_CHANNEL[0].TC_SR;
 	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[6]();
 	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[6]();
 	if(i & TC_SR_CPCS) MIPStimer::callbacks[6]();
 }
 void TC7_Handler()
 {
-	int i = TC_GetStatus(TC2, 1);
+    static int i;
+
+	i = TC2->TC_CHANNEL[1].TC_SR;
 	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[7]();
 	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[7]();
 	if(i & TC_SR_CPCS) MIPStimer::callbacks[7]();
 }
-void TC8_Handler()
+void __attribute__((weak)) TC8_Handler() 
 {
-	int i = TC_GetStatus(TC2, 2);
+    static int i;
+     
+	i = TC2->TC_CHANNEL[2].TC_SR;
 	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[8]();
 	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[8]();
 	if(i & TC_SR_CPCS) MIPStimer::callbacks[8]();

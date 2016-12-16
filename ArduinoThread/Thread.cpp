@@ -45,6 +45,11 @@ void Thread::setInterval(long _interval){
 	_cached_next_run = last_run + interval;
 }
 
+void Thread::setNextRunTime(long _nextTime){
+	// Set this tasks next run time
+	_cached_next_run = _nextTime;
+}
+
 bool Thread::shouldRun(long time){
 	// If less than 0, than get current ticks
 	if(time < 0)

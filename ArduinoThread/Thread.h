@@ -86,6 +86,9 @@ public:
 	// Set the desired interval for calls, and update _cached_next_run
 	virtual void setInterval(long _interval);
 
+	// Set the the next run time for task
+	virtual void setNextRunTime(long _nextTime);
+
 	// Return if the Thread should be runned or not
 	virtual bool shouldRun(long time = -1);
 

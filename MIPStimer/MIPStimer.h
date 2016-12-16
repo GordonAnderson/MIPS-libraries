@@ -58,6 +58,7 @@ public:
 	static int TIOBpins[9];
 
 	MIPStimer (int _timer);
+	MIPStimer setPriority(uint8_t pri);
 	MIPStimer attachInterrupt(void (*isr)());
 	MIPStimer attachInterruptRA(void (*isr)());
 	MIPStimer attachInterruptRB(void (*isr)());
