@@ -65,6 +65,7 @@ public:
 	MIPStimer detachInterrupt();
 	MIPStimer begin();
 	MIPStimer stop();
+	MIPStimer stopOnRC();
 	MIPStimer enableTrigger();
 	MIPStimer softwareTrigger();
 	MIPStimer setClock(uint32_t clock);
@@ -90,6 +91,7 @@ public:
     double   getClockFrequency();
 };
 
+extern void TimerTrapISR();
 // Just to call Timer.getAvailable instead of Timer::getAvailable() :
 extern MIPStimer Timer;
 

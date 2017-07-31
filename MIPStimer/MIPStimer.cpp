@@ -105,9 +105,9 @@ MIPStimer MIPStimer::detachInterrupt()
 
 	stop(); // Stop the currently running timer
 
-	callbacks[timer] = NULL;
-	callbacksRA[timer] = NULL;
-	callbacksRB[timer] = NULL;
+	callbacks[timer] = TimerTrapISR;
+	callbacksRA[timer] = TimerTrapISR;
+	callbacksRB[timer] = TimerTrapISR;
 	return *this;
 }
 
@@ -150,6 +150,14 @@ MIPStimer MIPStimer::stop()
 
 	NVIC_DisableIRQ(Timers[timer].irq);
 	TC_Stop(Timers[timer].tc, Timers[timer].channel);
+	return *this;
+}
+
+MIPStimer MIPStimer::stopOnRC()
+{
+	Timer t = Timers[timer];
+
+    t.tc->TC_CHANNEL[t.channel].TC_CMR |= TC_CMR_CPCSTOP;
 	return *this;
 }
 
@@ -511,6 +519,10 @@ uint32_t MIPStimer::getRAcounter()
 	Implementation of the timer callbacks defined in 
 	arduino-1.5.2/hardware/arduino/sam/system/CMSIS/Device/ATMEL/sam3xa/include/sam3x8e.h
 */
+void TimerTrapISR()
+{
+}
+
 void TC0_Handler()
 {
     static int i;

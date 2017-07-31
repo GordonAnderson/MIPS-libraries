@@ -12,7 +12,24 @@ static void DI_V_ISR(void);
 static void DI_W_ISR(void);
 static void DI_X_ISR(void);
 
+IRQn_Type DIhandler::irqs[8] = {PIOD_IRQn,PIOD_IRQn,PIOC_IRQn,PIOC_IRQn,PIOB_IRQn,PIOD_IRQn,PIOC_IRQn,PIOA_IRQn};
 int DIhandler::DIpin[8] = {30,12,50,51,53,28,46,17};
+Pio *DIhandler::pio[8] = {g_APinDescription[30].pPort,
+						  g_APinDescription[12].pPort,
+						  g_APinDescription[50].pPort,
+						  g_APinDescription[51].pPort,
+						  g_APinDescription[53].pPort,
+						  g_APinDescription[28].pPort,
+						  g_APinDescription[46].pPort,
+						  g_APinDescription[17].pPort};
+uint32_t DIhandler::pin[8] = {g_APinDescription[30].ulPin,
+							  g_APinDescription[12].ulPin,
+							  g_APinDescription[50].ulPin,
+							  g_APinDescription[51].ulPin,
+							  g_APinDescription[53].ulPin,
+							  g_APinDescription[28].ulPin,
+							  g_APinDescription[46].ulPin,
+							  g_APinDescription[17].ulPin};
 void (*DIhandler::DI_ISR[8])(void) = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
 void (*DI_ISRs[8])(void) = {DI_Q_ISR,DI_R_ISR,DI_S_ISR,DI_T_ISR,DI_U_ISR,DI_V_ISR,DI_W_ISR,DI_X_ISR};
 int DIhandler::NumHandlers = 0;
@@ -54,6 +71,12 @@ bool DIhandler::attached(char DI, int Mode,void (*isr)(void))
    if(userISR != NULL) return false;
    di = DI;
    mode = Mode;
+   // If any handlers are attached then exit 
+//   for(i=0;i<MaxDIhandlers;i++)
+//   {
+//      if((handlers[i]->mode == Mode) && (handlers[i]->di == DI) && (handlers[i]->userISR == isr)) return true;
+//   }
+   //
    if(DI_ISR[Index] == NULL)
    {
       userISR = isr;
@@ -83,6 +106,44 @@ void DIhandler::detach(void)
    DI_ISR[Index] = NULL;
 }
 
+void DIhandler::setPriority(uint8_t pri)
+{
+   int Index;
+   
+   if(di == 0) return;
+   Index = di - 'Q';
+   if((Index < 0) || (Index > 7)) return;
+
+    NVIC_DisableIRQ(irqs[Index]);
+	NVIC_ClearPendingIRQ(irqs[Index]);
+	NVIC_SetPriority(irqs[Index], pri);
+	NVIC_EnableIRQ(irqs[Index]);
+}
+
+void DIhandler::setPriority(char DI, uint8_t pri)
+{
+   int Index;
+   
+   if(DI == 0) return;
+   Index = DI - 'Q';
+   if((Index < 0) || (Index > 7)) return;
+
+    NVIC_DisableIRQ(irqs[Index]);
+	NVIC_ClearPendingIRQ(irqs[Index]);
+	NVIC_SetPriority(irqs[Index], pri);
+	NVIC_EnableIRQ(irqs[Index]);
+}
+
+uint32_t DIhandler::getPriority(void)
+{
+   int Index;
+   
+   if(di == 0) return(0);
+   Index = di - 'Q';
+   if((Index < 0) || (Index > 7)) return(0);
+   return NVIC_GetPriority(irqs[Index]);
+}
+
 bool DIhandler::activeLevel(void)
 {
    int Index,i;
@@ -96,23 +157,56 @@ bool DIhandler::activeLevel(void)
    return false;
 }
 
+bool DIhandler::state(void)
+{
+   int Index,i;
+   
+   Index = di - 'Q';
+   if((di==0) || (mode==-1)) return true;
+   i = digitalRead(DIpin[Index]);
+   if(i == HIGH) return true;
+   return false;
+}
+
+bool DIhandler::test(int mode)
+{
+   int Index,i;
+   
+   Index = di - 'Q';
+   if((di==0) || (mode==-1)) return true;
+   i = digitalRead(DIpin[Index]);
+   if((i == HIGH) && ((mode == RISING) || (mode == HIGH))) return true;
+   if((i == LOW) && ((mode == FALLING) || (mode == LOW))) return true;
+   return false;
+}
+
 void DI_Generic_ISR(int Index)
 {
-   int i;
+   int i,pinstate = HIGH;
+   void  (*userISRptr)(void);
    
+//   if((DIhandler::pio[Index]->PIO_ODSR & DIhandler::pin[Index]) == 0) pinstate = LOW;
+   pinstate = digitalRead(DIhandler::DIpin[Index]);
    for(i=0;i<MaxDIhandlers;i++)
    {
       if(DIhandler::handlers[i] != NULL)  // was, if(DIhandler::handlers != NULL)
       {
          if(DIhandler::handlers[i]->di != ('Q'+Index)) continue; 
-         if(DIhandler::handlers[i]->userISR  == NULL) continue;
-         if(DIhandler::handlers[i]->mode == CHANGE) DIhandler::handlers[i]->userISR();
-//         else if(DIhandler::handlers[i]->mode == HIGH) DIhandler::handlers[i]->userISR();
-//         else if(DIhandler::handlers[i]->mode == LOW) DIhandler::handlers[i]->userISR();
-         else if((DIhandler::handlers[i]->mode == HIGH) && (digitalRead(DIhandler::DIpin[Index]) == HIGH)) DIhandler::handlers[i]->userISR();
-         else if((DIhandler::handlers[i]->mode == LOW) && (digitalRead(DIhandler::DIpin[Index]) == LOW)) DIhandler::handlers[i]->userISR();
-         else if((DIhandler::handlers[i]->mode == RISING) && (digitalRead(DIhandler::DIpin[Index]) == HIGH)) DIhandler::handlers[i]->userISR();
-         else if((DIhandler::handlers[i]->mode == FALLING) && (digitalRead(DIhandler::DIpin[Index]) == LOW)) DIhandler::handlers[i]->userISR();
+         userISRptr = DIhandler::handlers[i]->userISR;
+         if(userISRptr == NULL) continue;
+         // If this event has been processed already then skip it
+         for(int j=0;j<i;j++)
+         {
+            if((DIhandler::handlers[j]->mode == DIhandler::handlers[i]->mode)\
+                && (DIhandler::handlers[j]->di == DIhandler::handlers[i]->di)\
+                && (DIhandler::handlers[j]->userISR == DIhandler::handlers[i]->userISR)) userISRptr = NULL;
+         }
+         if(userISRptr == NULL) continue;
+         if(DIhandler::handlers[i]->mode == CHANGE) userISRptr();
+         else if((DIhandler::handlers[i]->mode == HIGH) && (pinstate == HIGH)) userISRptr();
+         else if((DIhandler::handlers[i]->mode == LOW) && (pinstate == LOW)) userISRptr();
+         else if((DIhandler::handlers[i]->mode == RISING) && (pinstate == HIGH)) userISRptr();
+         else if((DIhandler::handlers[i]->mode == FALLING) && (pinstate == LOW)) userISRptr();
       }
    }
 }

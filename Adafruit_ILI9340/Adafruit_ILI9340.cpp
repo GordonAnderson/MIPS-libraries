@@ -61,7 +61,7 @@ void Adafruit_ILI9340::spiwrite(uint8_t c) {
 
   //Serial.print("0x"); Serial.print(c, HEX); Serial.print(", ");
 
-//AtomicBlock< Atomic_RestoreState > a_Block;
+AtomicBlock< Atomic_RestoreState > a_Block;
   CLEAR_BIT(csport, cspinmask);
   if (hwSPI) {
 #ifdef __AVR__
@@ -266,6 +266,8 @@ void Adafruit_ILI9340::begin(void) {
  
   writecommand(ILI9340_PWCTR1);    //Power control 
   writedata(0x23);   //VRH[5:0] 
+// writedata(0x26);   //VRH[5:0] 
+// writedata(0x0c);   //VRH[5:0] 
  
   writecommand(ILI9340_PWCTR2);    //Power control 
   writedata(0x10);   //SAP[2:0];BT[3:0] 
@@ -286,6 +288,8 @@ void Adafruit_ILI9340::begin(void) {
   writecommand(ILI9340_FRMCTR1);    
   writedata(0x00);  
   writedata(0x18); 
+//  writedata(0x02);  
+//  writedata(0x1B); 
  
   writecommand(ILI9340_DFUNCTR);    // Display Function Control 
   writedata(0x08); 
