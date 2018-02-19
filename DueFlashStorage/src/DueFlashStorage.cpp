@@ -13,6 +13,9 @@ DueFlashStorage::DueFlashStorage() {
 byte DueFlashStorage::read(uint32_t address) {
   return FLASH_START[address];
 }
+byte DueFlashStorage::readAbs(uint32_t address) {
+  return *(byte *)address;
+}
 byte* DueFlashStorage::readAddress(uint32_t address) {
   return FLASH_START+address;
 }
@@ -63,7 +66,7 @@ boolean DueFlashStorage::write(uint32_t address, byte *data, uint32_t dataLength
     _FLASH_DEBUG("Flash start address must be on four byte boundary\n");
     return false;
   }
-
+  
   // Unlock page
   retCode = flash_unlock((uint32_t)FLASH_START+address, (uint32_t)FLASH_START+address + dataLength - 1, 0, 0);
   if (retCode != FLASH_RC_OK) {
@@ -71,8 +74,40 @@ boolean DueFlashStorage::write(uint32_t address, byte *data, uint32_t dataLength
     return false;
   }
 
-  // write data
+ // write data
   retCode = flash_write((uint32_t)FLASH_START+address, data, dataLength, 1);
+
+  if (retCode != FLASH_RC_OK) {
+    _FLASH_DEBUG("Flash write failed\n");
+    return false;
+  }
+  // Lock page
+//    retCode = flash_lock((uint32_t)FLASH_START+address, (uint32_t)FLASH_START+address + dataLength - 1, 0, 0);
+//  if (retCode != FLASH_RC_OK) {
+//    _FLASH_DEBUG("Failed to lock flash page\n");
+//    return false;
+//  }
+  return true;
+}
+
+
+boolean DueFlashStorage::writeAbs(uint32_t address, byte *data, uint32_t dataLength) {
+  uint32_t retCode;
+
+  if (((uint32_t)address & 3) != 0) {
+    _FLASH_DEBUG("Flash start address must be on four byte boundary\n");
+    return false;
+  }
+
+  // Unlock page
+  retCode = flash_unlock((uint32_t)address, (uint32_t)address + dataLength - 1, 0, 0);
+  if (retCode != FLASH_RC_OK) {
+    _FLASH_DEBUG("Failed to unlock flash for write\n");
+    return false;
+  }
+
+ // write data
+  retCode = flash_write((uint32_t)address, data, dataLength, 1);
 
   if (retCode != FLASH_RC_OK) {
     _FLASH_DEBUG("Flash write failed\n");

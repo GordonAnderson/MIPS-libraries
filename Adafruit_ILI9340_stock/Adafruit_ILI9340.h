@@ -17,7 +17,6 @@
 #ifndef _ADAFRUIT_ILI9340H_
 #define _ADAFRUIT_ILI9340H_
 
-
 #if ARDUINO >= 100
  #include "Arduino.h"
  #include "Print.h"
@@ -117,10 +116,6 @@
 #define ILI9340_YELLOW  0xFFE0  
 #define ILI9340_WHITE   0xFFFF
 
-// Display type
-#define  ILI9340_DSP 0
-#define  HX8347_DSP  1
-
 
 class Adafruit_ILI9340 : public Adafruit_GFX {
 
@@ -131,7 +126,6 @@ class Adafruit_ILI9340 : public Adafruit_GFX {
   Adafruit_ILI9340(uint8_t CS, uint8_t RS, uint8_t RST);
 
   void     begin(void),
-  		   SetDisplayType(uint8_t dsp_type),
   		   disableDisplay(bool state),
            setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1),
            pushColor(uint16_t color),
@@ -139,16 +133,11 @@ class Adafruit_ILI9340 : public Adafruit_GFX {
            drawPixel(int16_t x, int16_t y, uint16_t color),
            drawFastVLine(int16_t x, int16_t y, int16_t h, uint16_t color),
            drawFastHLine(int16_t x, int16_t y, int16_t w, uint16_t color),
-           fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t color),
+           fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
+             uint16_t color),
            setRotation(uint8_t r),
            invertDisplay(boolean i);
   uint16_t Color565(uint8_t r, uint8_t g, uint8_t b);
-  
-  // HX8347 display functions
-  void     HX8347setAddrWindow(int16_t x, int16_t y, int16_t x1, int16_t y1);
-  void     HX8347setRotation(uint8_t r);
-  void     HX8347invertDisplay(bool i);
- 
 
   /* These are not for current use, 8-bit protocol only! */
   uint8_t  readdata(void),
@@ -160,14 +149,12 @@ class Adafruit_ILI9340 : public Adafruit_GFX {
   */  
 
   uint8_t     spiwrite(uint8_t);
-  void        spiwrite16(uint16_t w); 
   void        writecommand(uint8_t c),
               writedata(uint8_t d),
               commandList(uint8_t *addr);
   uint8_t     spiread(void);
 
  private:
-  uint8_t  DisplayType;
   uint8_t  tabcolor;
   bool     disable;
 

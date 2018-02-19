@@ -32,6 +32,7 @@
   #define CLEAR_BIT(port, bitMask) *(port) &= ~(bitMask)
 #endif
 
+
 // Constructor when using software SPI.  All output pins are configurable.
 Adafruit_ILI9340::Adafruit_ILI9340(uint8_t cs, uint8_t dc, uint8_t mosi,
 				   uint8_t sclk, uint8_t rst, uint8_t miso) : Adafruit_GFX(ILI9340_TFTWIDTH, ILI9340_TFTHEIGHT) {
@@ -42,10 +43,6 @@ Adafruit_ILI9340::Adafruit_ILI9340(uint8_t cs, uint8_t dc, uint8_t mosi,
   _sclk = sclk;
   _rst  = rst;
   hwSPI = false;
-  
-  DisplayType = ILI9340_DSP;
-
-
 }
 
 
@@ -57,13 +54,6 @@ Adafruit_ILI9340::Adafruit_ILI9340(uint8_t cs, uint8_t dc, uint8_t rst) : Adafru
   _rst  = rst;
   hwSPI = true;
   _mosi  = _sclk = 0;
-  
-  DisplayType = ILI9340_DSP;
-}
-
-void Adafruit_ILI9340::SetDisplayType(uint8_t dsp_type) 
-{ 
-   DisplayType = dsp_type;  
 }
 
 inline uint8_t Adafruit_ILI9340::spiwrite(uint8_t c) {
@@ -104,29 +94,6 @@ AtomicBlock< Atomic_RestoreState > a_Block;
   SET_BIT(csport, cspinmask);
   return(c);
 }
-
-inline void Adafruit_ILI9340::spiwrite16(uint16_t w) 
-{
-  uint8_t c;
-  
-  if(disable) return;
-  
-  AtomicBlock< Atomic_RestoreState > a_Block;
-  CLEAR_BIT(csport, cspinmask);
-  static uint32_t ch = SPI_PCS(BOARD_PIN_TO_SPI_CHANNEL(BOARD_SPI_DEFAULT_SS));
-  while ((SPI0->SPI_SR & SPI_SR_TDRE) == 0);
-  SPI0->SPI_TDR = ch | (w >> 8);
-  while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
-  c = SPI0->SPI_RDR; 
-
-  while ((SPI0->SPI_SR & SPI_SR_TDRE) == 0);
-  SPI0->SPI_TDR = ch | (w & 0xFF);
-  while ((SPI0->SPI_SR & SPI_SR_RDRF) == 0);
-  c = SPI0->SPI_RDR; 
-  
-  SET_BIT(csport, cspinmask);
-}
-
 
 
 void Adafruit_ILI9340::writecommand(uint8_t c) {
@@ -209,17 +176,71 @@ static const uint8_t ILI9340_regValues[] PROGMEM =
   ILI9340_SLPOUT,0 | DELAY,  			//Exit Sleep 
   120, 		
   ILI9340_DISPON,0,    //Display on   
-//  0x53,1,0x2C,
-//  0x51,1,0x00
 };
+
+void Adafruit_ILI9340::begin(void) {
+  pinMode(_rst, OUTPUT);
+  digitalWrite(_rst, LOW);
+  pinMode(_dc, OUTPUT);
+  pinMode(_cs, OUTPUT);
+#ifdef __AVR__
+  csport    = portOutputRegister(digitalPinToPort(_cs));
+  dcport    = portOutputRegister(digitalPinToPort(_dc));
+#endif
+#if defined(__SAM3X8E__)
+  csport    = digitalPinToPort(_cs);
+  dcport    = digitalPinToPort(_dc);
+#endif
+  cspinmask = digitalPinToBitMask(_cs);
+  dcpinmask = digitalPinToBitMask(_dc);
+
+  disable = false;
+  if(hwSPI) { // Using hardware SPI
+    SPI.begin();
+#ifdef __AVR__
+    SPI.setClockDivider(SPI_CLOCK_DIV2); // 8 MHz (full! speed!)
+#endif
+#if defined(__SAM3X8E__)
+    SPI.setClockDivider(11); // 85MHz / 11 = 7.6 MHz (full! speed!)
+#endif    SPI.setBitOrder(MSBFIRST);
+    SPI.setBitOrder(MSBFIRST);
+    SPI.setDataMode(SPI_MODE0);
+  } else {
+    pinMode(_sclk, OUTPUT);
+    pinMode(_mosi, OUTPUT);
+    pinMode(_miso, INPUT);
+#ifdef __AVR__
+    clkport     = portOutputRegister(digitalPinToPort(_sclk));
+    mosiport    = portOutputRegister(digitalPinToPort(_mosi));
+#endif
+#if defined(__SAM3X8E__)
+    clkport     = digitalPinToPort(_sclk);
+    mosiport    = digitalPinToPort(_mosi);
+#endif
+    clkpinmask  = digitalPinToBitMask(_sclk);
+    mosipinmask = digitalPinToBitMask(_mosi);
+    CLEAR_BIT(clkport, clkpinmask);
+    CLEAR_BIT(mosiport, mosipinmask);
+  }
+
+  // toggle RST low to reset
+
+  digitalWrite(_rst, HIGH);
+  delay(5);
+  digitalWrite(_rst, LOW);
+  delay(20);
+  digitalWrite(_rst, HIGH);
+  delay(150);
+  
+  // Issue the init sequence
+  
+  if(cmdList) commandList(cmdList);
+  
+}
+
 
 void Adafruit_ILI9340::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint16_t y1) 
 {
-  if (DisplayType == HX8347_DSP) 
-  {
-     HX8347setAddrWindow(x0,y0,x1,y1);
-     return;
-  }  
 #if defined(__SAM3X8E__)
 //  if(disable) return;
   writecommand(ILI9340_CASET); // Column addr set
@@ -260,15 +281,18 @@ void Adafruit_ILI9340::setAddrWindow(uint16_t x0, uint16_t y0, uint16_t x1, uint
 
 void Adafruit_ILI9340::pushColor(uint16_t color) {
   SET_BIT(dcport, dcpinmask);
-  spiwrite16(color);
+  spiwrite(color >> 8);
+  spiwrite(color);
 }
 
 void Adafruit_ILI9340::drawPixel(int16_t x, int16_t y, uint16_t color) {
+
   if((x < 0) ||(x >= _width) || (y < 0) || (y >= _height)) return;
 
   setAddrWindow(x,y,x+1,y+1);
   SET_BIT(dcport, dcpinmask);
-  spiwrite16(color);
+  spiwrite(color >> 8);
+  spiwrite(color);
 }
 
 
@@ -287,7 +311,8 @@ void Adafruit_ILI9340::drawFastVLine(int16_t x, int16_t y, int16_t h,
 
   SET_BIT(dcport, dcpinmask);
   while (h--) {
-    spiwrite16(color);
+    spiwrite(hi);
+    spiwrite(lo);
   }
 }
 
@@ -303,7 +328,8 @@ void Adafruit_ILI9340::drawFastHLine(int16_t x, int16_t y, int16_t w,
   uint8_t hi = color >> 8, lo = color;
   SET_BIT(dcport, dcpinmask);
   while (w--) {
-    spiwrite16(color);
+    spiwrite(hi);
+    spiwrite(lo);
   }
 }
 
@@ -327,23 +353,21 @@ void Adafruit_ILI9340::fillRect(int16_t x, int16_t y, int16_t w, int16_t h,
   SET_BIT(dcport, dcpinmask);
   for(y=h; y>0; y--) {
     for(x=w; x>0; x--) {
-      spiwrite16(color);
+      spiwrite(hi);
+      spiwrite(lo);
     }
   }
 }
+
 
 // Pass 8-bit (each) R,G,B, get back 16-bit packed color
 uint16_t Adafruit_ILI9340::Color565(uint8_t r, uint8_t g, uint8_t b) {
   return ((r & 0xF8) << 8) | ((g & 0xFC) << 3) | (b >> 3);
 }
 
+
 void Adafruit_ILI9340::setRotation(uint8_t m) {
 
-  if (DisplayType == HX8347_DSP) 
-  {
-     HX8347setRotation(m);
-     return;
-  }  
   writecommand(ILI9340_MADCTL);
   rotation = m % 4; // can't be higher than 3
   switch (rotation) {
@@ -371,13 +395,7 @@ void Adafruit_ILI9340::setRotation(uint8_t m) {
 }
 
 
-void Adafruit_ILI9340::invertDisplay(boolean i) 
-{
-  if (DisplayType == HX8347_DSP) 
-  {
-     HX8347invertDisplay(i);
-     return;
-  }  
+void Adafruit_ILI9340::invertDisplay(boolean i) {
   writecommand(i ? ILI9340_INVON : ILI9340_INVOFF);
 }
 
@@ -539,7 +557,6 @@ uint8_t Adafruit_ILI9340::readcommand8(uint8_t c)
 // 
 // Functions that support the HX8347D display
 //
-
 #define HX8347G_COLADDRSTART_HI    0x02
 #define HX8347G_COLADDRSTART_LO    0x03
 #define HX8347G_COLADDREND_HI      0x04
@@ -595,7 +612,7 @@ uint8_t Adafruit_ILI9340::readcommand8(uint8_t c)
 	0x1A,1,0x01, //BT (VGH~15V,VGL~-10V,DDVDH~5V)
 	0x24,1,0x2F, //VMH(VCOM High voltage ~3.2V)
 	0x25,1,0x57, //VML(VCOM Low voltage -1.2V)
-//	****VCOM offset**
+	//****VCOM offset**///
 	0x23,1,0x88, //for Flicker adjust //can reload from OTP
 	//Power on Setting
 	0x18,1,0x34, //I/P_RADJ,N/P_RADJ, Normal mode 60Hz
@@ -617,6 +634,7 @@ uint8_t Adafruit_ILI9340::readcommand8(uint8_t c)
 	0x28,1 | DELAY,0x38, //GON=1, DTE=1, D=1000
 	40,
 	0x28,1,0x3F, //GON=1, DTE=1, D=1100
+
 	0x16,1,0x18,
 	//Set GRAM Area
 	0x02,1,0x00,
@@ -672,7 +690,6 @@ void Adafruit_ILI9340::HX8347setRotation(uint8_t r)
 {
     uint16_t mac = 0x0800;
     Adafruit_GFX::setRotation(r & 3);
-    // rotation = r % 4; // can't be higher than 3
     switch (rotation) {
         case 0:
             mac = 0x0800;   // BGR=1
@@ -699,67 +716,5 @@ void Adafruit_ILI9340::HX8347invertDisplay(bool i)
     writecommand(0x36);
     writedata(val);
 }
-
-void Adafruit_ILI9340::begin(void) {
-
-  pinMode(_rst, OUTPUT);
-  digitalWrite(_rst, LOW);
-  pinMode(_dc, OUTPUT);
-  pinMode(_cs, OUTPUT);
-#ifdef __AVR__
-  csport    = portOutputRegister(digitalPinToPort(_cs));
-  dcport    = portOutputRegister(digitalPinToPort(_dc));
-#endif
-#if defined(__SAM3X8E__)
-  csport    = digitalPinToPort(_cs);
-  dcport    = digitalPinToPort(_dc);
-#endif
-  cspinmask = digitalPinToBitMask(_cs);
-  dcpinmask = digitalPinToBitMask(_dc);
-
-  disable = false;
-  if(hwSPI) { // Using hardware SPI
-    SPI.begin();
-#ifdef __AVR__
-    SPI.setClockDivider(SPI_CLOCK_DIV2); // 8 MHz (full! speed!)
-#endif
-#if defined(__SAM3X8E__)
-    SPI.setClockDivider(11); // 85MHz / 11 = 7.6 MHz (full! speed!)
-#endif    SPI.setBitOrder(MSBFIRST);
-    SPI.setBitOrder(MSBFIRST);
-    SPI.setDataMode(SPI_MODE0);
-  } else {
-    pinMode(_sclk, OUTPUT);
-    pinMode(_mosi, OUTPUT);
-    pinMode(_miso, INPUT);
-#ifdef __AVR__
-    clkport     = portOutputRegister(digitalPinToPort(_sclk));
-    mosiport    = portOutputRegister(digitalPinToPort(_mosi));
-#endif
-#if defined(__SAM3X8E__)
-    clkport     = digitalPinToPort(_sclk);
-    mosiport    = digitalPinToPort(_mosi);
-#endif
-    clkpinmask  = digitalPinToBitMask(_sclk);
-    mosipinmask = digitalPinToBitMask(_mosi);
-    CLEAR_BIT(clkport, clkpinmask);
-    CLEAR_BIT(mosiport, mosipinmask);
-  }
-
-  // toggle RST low to reset
-
-  digitalWrite(_rst, HIGH);
-  delay(5);
-  digitalWrite(_rst, LOW);
-  delay(20);
-  digitalWrite(_rst, HIGH);
-  delay(150);
-  
-  // Issue the init sequence
-  
-  if (DisplayType == ILI9340_DSP) commandList((uint8_t *) ILI9340_regValues);
-  if (DisplayType == HX8347_DSP) commandList((uint8_t *) HX8347G_regValues);
-}
-
 
 

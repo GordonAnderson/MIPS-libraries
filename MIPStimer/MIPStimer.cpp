@@ -29,11 +29,14 @@ const MIPStimer::Timer MIPStimer::Timers[9] = {
 void (*MIPStimer::callbacks[9])() = {};
 void (*MIPStimer::callbacksRA[9])() = {};
 void (*MIPStimer::callbacksRB[9])() = {};
+bool MIPStimer::Used[9]={false,false,false,false,false,false,false,false,false};
 double MIPStimer::ClockFrequency[9]={0,0,0,0,0,0,0,0,0};
 double MIPStimer::_frequency[9] = {-1,-1,-1,-1,-1,-1,-1,-1,-1};
 // Pin numbers for output pins for each timer, -1 indicates not avaliable for use
 int MIPStimer::TIOApins[9] = {2,-1,-1,-1,-1,-1,5,3,11};
 int MIPStimer::TIOBpins[9] = {13,-1,-1,-1,-1,-1,4,10,12};
+// Used by get status function
+uint32_t MIPStimer::SR[9] = {0,0,0,0,0,0,0,0,0};
 
 /*
 	Initializing all timers, so you can use them like this: Timer0.start();
@@ -53,14 +56,18 @@ MIPStimer Timer8(8);
 MIPStimer::MIPStimer(int _timer)
 {
 	// The constructor of the class MIPStimer 
-
 	timer = _timer;
+	Used[timer] = true;
+}
+
+bool MIPStimer::InUse()
+{
+   return(Used[timer]);
 }
 
 MIPStimer MIPStimer::getAvailable()
 {
 	// Return the first timer with no callback set
-
 	for(int i = 0; i < 9; i++){
 		if(!callbacks[i])
 			return MIPStimer(i);
@@ -204,6 +211,23 @@ MIPStimer MIPStimer::setTrigger(uint32_t trigger)
 
     t.tc->TC_CHANNEL[t.channel].TC_CMR = (t.tc->TC_CHANNEL[t.channel].TC_CMR 
 					     & ~(TC_CMR_EEVTEDG_Msk | TC_CMR_EEVT_Msk)) | trigger | TC_CMR_EEVT_TIOB;
+//    t.tc->TC_CHANNEL[t.channel].TC_CMR = (t.tc->TC_CHANNEL[t.channel].TC_CMR 
+//					     & ~(TC_CMR_EEVTEDG_Msk | TC_CMR_EEVT_Msk)) | trigger | TC_CMR_EEVT_XC2;
+	return *this;
+}
+
+// trigger options are:
+//  TC_CMR_EEVTEDG_NONE			Software trigger
+//  TC_CMR_EEVTEDG_RISING		TIOB rising edge
+//  TC_CMR_EEVTEDG_FALLING		TIOB falling edge
+//  TC_CMR_EEVTEDG_EDGE			TIOB both edges
+MIPStimer MIPStimer::setTriggerQ(uint32_t trigger)
+{
+	// Get current timer configuration
+	Timer t = Timers[timer];
+
+    t.tc->TC_CHANNEL[t.channel].TC_CMR = (t.tc->TC_CHANNEL[t.channel].TC_CMR 
+					     & ~(TC_CMR_EEVTEDG_Msk | TC_CMR_EEVT_Msk)) | trigger | TC_CMR_EEVT_XC2;
 	return *this;
 }
 
@@ -491,6 +515,20 @@ double MIPStimer::getClockFrequency()
 	return ClockFrequency[timer];
 }
 
+bool MIPStimer::checkStatusBit(uint32_t bitMask)
+{
+    uint32_t  i;
+    
+	// Get current timer configuration
+	Timer t = Timers[timer];
+	SR[timer] &= 0xFF;
+	SR[timer] |= t.tc->TC_CHANNEL[t.channel].TC_SR;
+	i = SR[timer];
+	SR[timer] &= ~bitMask;
+	if((i & bitMask) != 0) return true;
+	return false;
+}
+
 uint32_t MIPStimer::getStatus()
 {
 	// Get current timer configuration
@@ -525,82 +563,82 @@ void TimerTrapISR()
 
 void TC0_Handler()
 {
-    static int i;
-
-	i = TC0->TC_CHANNEL[0].TC_SR;
-	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[0]();
-	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[0]();
-	if(i & TC_SR_CPCS) MIPStimer::callbacks[0]();
+	MIPStimer::SR[0] &= 0xFF;
+	MIPStimer::SR[0] |=  TC0->TC_CHANNEL[0].TC_SR;
+	if(MIPStimer::SR[0] & TC_SR_CPAS) MIPStimer::callbacksRA[0]();
+	if(MIPStimer::SR[0] & TC_SR_CPBS) MIPStimer::callbacksRB[0]();
+	if(MIPStimer::SR[0] & TC_SR_CPCS) MIPStimer::callbacks[0]();
+	MIPStimer::SR[0] &= ~(TC_SR_CPAS | TC_SR_CPBS | TC_SR_CPCS);
 }
 void TC1_Handler()
 {
-    static int i;
-
-	i = TC0->TC_CHANNEL[1].TC_SR;
-	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[1]();
-	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[1]();
-	if(i & TC_SR_CPCS) MIPStimer::callbacks[1]();
+	MIPStimer::SR[1] &= 0xFF;
+	MIPStimer::SR[1] |=  TC0->TC_CHANNEL[1].TC_SR;
+	if(MIPStimer::SR[1] & TC_SR_CPAS) MIPStimer::callbacksRA[1]();
+	if(MIPStimer::SR[1] & TC_SR_CPBS) MIPStimer::callbacksRB[1]();
+	if(MIPStimer::SR[1] & TC_SR_CPCS) MIPStimer::callbacks[1]();
+	MIPStimer::SR[1] &= ~(TC_SR_CPAS | TC_SR_CPBS | TC_SR_CPCS);
 }
 void TC2_Handler()
 {
-    static int i;
-
-	i = TC0->TC_CHANNEL[2].TC_SR;
-	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[2]();
-	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[2]();
-	if(i & TC_SR_CPCS) MIPStimer::callbacks[2]();
+	MIPStimer::SR[2] &= 0xFF;
+	MIPStimer::SR[2] |=  TC0->TC_CHANNEL[2].TC_SR;
+	if(MIPStimer::SR[2] & TC_SR_CPAS) MIPStimer::callbacksRA[2]();
+	if(MIPStimer::SR[2] & TC_SR_CPBS) MIPStimer::callbacksRB[2]();
+	if(MIPStimer::SR[2] & TC_SR_CPCS) MIPStimer::callbacks[2]();
+	MIPStimer::SR[2] &= ~(TC_SR_CPAS | TC_SR_CPBS | TC_SR_CPCS);
 }
 void TC3_Handler()
 {
-    static int i;
-
-	i = TC1->TC_CHANNEL[0].TC_SR;
-	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[3]();
-	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[3]();
-	if(i & TC_SR_CPCS) MIPStimer::callbacks[3]();
+	MIPStimer::SR[3] &= 0xFF;
+	MIPStimer::SR[3] |=  TC1->TC_CHANNEL[0].TC_SR;
+	if(MIPStimer::SR[3] & TC_SR_CPAS) MIPStimer::callbacksRA[3]();
+	if(MIPStimer::SR[3] & TC_SR_CPBS) MIPStimer::callbacksRB[3]();
+	if(MIPStimer::SR[3] & TC_SR_CPCS) MIPStimer::callbacks[3]();
+	MIPStimer::SR[3] &= ~(TC_SR_CPAS | TC_SR_CPBS | TC_SR_CPCS);
 }
 void TC4_Handler()
 {
-    static int i;
-
-	i = TC1->TC_CHANNEL[1].TC_SR;
-	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[4]();
-	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[4]();
-	if(i & TC_SR_CPCS) MIPStimer::callbacks[4]();
+	MIPStimer::SR[4] &= 0xFF;
+	MIPStimer::SR[4] |=  TC1->TC_CHANNEL[1].TC_SR;
+	if(MIPStimer::SR[4] & TC_SR_CPAS) MIPStimer::callbacksRA[4]();
+	if(MIPStimer::SR[4] & TC_SR_CPBS) MIPStimer::callbacksRB[4]();
+	if(MIPStimer::SR[4] & TC_SR_CPCS) MIPStimer::callbacks[4]();
+	MIPStimer::SR[4] &= ~(TC_SR_CPAS | TC_SR_CPBS | TC_SR_CPCS);
 }
 void TC5_Handler()
 {
-    static int i;
-
-	i = TC1->TC_CHANNEL[2].TC_SR;
-	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[5]();
-	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[5]();
-	if(i & TC_SR_CPCS) MIPStimer::callbacks[5]();
+	MIPStimer::SR[5] &= 0xFF;
+	MIPStimer::SR[5] |=  TC1->TC_CHANNEL[2].TC_SR;
+	if(MIPStimer::SR[5] & TC_SR_CPAS) MIPStimer::callbacksRA[5]();
+	if(MIPStimer::SR[5] & TC_SR_CPBS) MIPStimer::callbacksRB[5]();
+	if(MIPStimer::SR[5] & TC_SR_CPCS) MIPStimer::callbacks[5]();
+	MIPStimer::SR[5] &= ~(TC_SR_CPAS | TC_SR_CPBS | TC_SR_CPCS);
 }
 void TC6_Handler()
 {
-    static int i;
-
-	i = TC2->TC_CHANNEL[0].TC_SR;
-	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[6]();
-	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[6]();
-	if(i & TC_SR_CPCS) MIPStimer::callbacks[6]();
+	MIPStimer::SR[6] &= 0xFF;
+	MIPStimer::SR[6] |=  TC2->TC_CHANNEL[0].TC_SR;
+	if(MIPStimer::SR[6] & TC_SR_CPAS) MIPStimer::callbacksRA[6]();
+	if(MIPStimer::SR[6] & TC_SR_CPBS) MIPStimer::callbacksRB[6]();
+	if(MIPStimer::SR[6] & TC_SR_CPCS) MIPStimer::callbacks[6]();
+	MIPStimer::SR[6] &= ~(TC_SR_CPAS | TC_SR_CPBS | TC_SR_CPCS);
 }
 void TC7_Handler()
 {
-    static int i;
-
-	i = TC2->TC_CHANNEL[1].TC_SR;
-	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[7]();
-	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[7]();
-	if(i & TC_SR_CPCS) MIPStimer::callbacks[7]();
+	MIPStimer::SR[7] &= 0xFF;
+	MIPStimer::SR[7] |= TC2->TC_CHANNEL[1].TC_SR;
+	if(MIPStimer::SR[7] & TC_SR_CPAS) MIPStimer::callbacksRA[7]();
+	if(MIPStimer::SR[7] & TC_SR_CPBS) MIPStimer::callbacksRB[7]();
+	if(MIPStimer::SR[7] & TC_SR_CPCS) MIPStimer::callbacks[7]();
+	MIPStimer::SR[7] &= ~(TC_SR_CPAS | TC_SR_CPBS | TC_SR_CPCS);
 }
 void __attribute__((weak)) TC8_Handler() 
 {
-    static int i;
-     
-	i = TC2->TC_CHANNEL[2].TC_SR;
-	if(i & TC_SR_CPAS) MIPStimer::callbacksRA[8]();
-	if(i & TC_SR_CPBS) MIPStimer::callbacksRB[8]();
-	if(i & TC_SR_CPCS) MIPStimer::callbacks[8]();
+	MIPStimer::SR[8] &= 0xFF;
+	MIPStimer::SR[8] |= TC2->TC_CHANNEL[2].TC_SR;
+	if(MIPStimer::SR[8] & TC_SR_CPAS) MIPStimer::callbacksRA[8]();
+	if(MIPStimer::SR[8] & TC_SR_CPBS) MIPStimer::callbacksRB[8]();
+	if(MIPStimer::SR[8] & TC_SR_CPCS) MIPStimer::callbacks[8]();
+	MIPStimer::SR[8] &= ~(TC_SR_CPAS | TC_SR_CPBS | TC_SR_CPCS);
 }

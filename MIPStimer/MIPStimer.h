@@ -33,9 +33,11 @@ protected:
 	// Stores the object timer frequency
 	// (allows to access current timer period and frequency):
 	static double _frequency[9];
-	
+	// Timer channel used flag
+	static bool Used[9];
 	// Picks the best clock to lower the error
 	static uint8_t bestClock(double frequency, uint32_t& retRC, uint8_t ClockDivisor);
+	
 
 public:
 	struct Timer
@@ -45,6 +47,7 @@ public:
 		IRQn_Type irq;
 	};
 
+	static uint32_t SR[9];
 	static MIPStimer getAvailable();
 
 	// Store timer configuration (static, as it's fix for every object)
@@ -70,6 +73,7 @@ public:
 	MIPStimer softwareTrigger();
 	MIPStimer setClock(uint32_t clock);
 	MIPStimer setTrigger(uint32_t trigger);
+    MIPStimer setTriggerQ(uint32_t trigger);
     MIPStimer setTIOAeffect(uint32_t count, uint32_t effect);
     MIPStimer setTIOAeffectNOIO(uint32_t count, uint32_t effect);
     MIPStimer setRA(uint32_t count);
@@ -83,7 +87,9 @@ public:
 	MIPStimer setFrequency(double frequency, uint8_t ClockDivisor = 0);
 	MIPStimer setPeriod(long microseconds, uint8_t ClockDivisor = 0);
 
-	uint32_t getStatus();
+    bool     InUse();
+	bool     checkStatusBit(uint32_t bitMask);
+    uint32_t getStatus();
 	uint32_t getCounter();
 	uint32_t getRAcounter();
 	double   getFrequency();

@@ -44,9 +44,11 @@ public:
   // dataLength is length of data in bytes
   
 	byte read(uint32_t address);
+	byte readAbs(uint32_t address);
 	byte* readAddress(uint32_t address);
 	boolean write(uint32_t address, byte value);
 	boolean write(uint32_t address, byte *data, uint32_t dataLength);
+	boolean writeAbs(uint32_t address, byte *data, uint32_t dataLength);
 };
 
 #endif
