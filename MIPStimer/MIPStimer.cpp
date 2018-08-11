@@ -637,8 +637,8 @@ void __attribute__((weak)) TC8_Handler()
 {
 	MIPStimer::SR[8] &= 0xFF;
 	MIPStimer::SR[8] |= TC2->TC_CHANNEL[2].TC_SR;
-	if(MIPStimer::SR[8] & TC_SR_CPAS) MIPStimer::callbacksRA[8]();
-	if(MIPStimer::SR[8] & TC_SR_CPBS) MIPStimer::callbacksRB[8]();
-	if(MIPStimer::SR[8] & TC_SR_CPCS) MIPStimer::callbacks[8]();
-	MIPStimer::SR[8] &= ~(TC_SR_CPAS | TC_SR_CPBS | TC_SR_CPCS);
+	if(MIPStimer::SR[8] & TC_SR_CPAS) { MIPStimer::callbacksRA[8](); MIPStimer::SR[8] &= ~TC_SR_CPAS;}
+	if(MIPStimer::SR[8] & TC_SR_CPBS) { MIPStimer::callbacksRB[8]();  MIPStimer::SR[8] &= ~TC_SR_CPBS;}
+	if(MIPStimer::SR[8] & TC_SR_CPCS) { MIPStimer::callbacks[8]();  MIPStimer::SR[8] &= ~TC_SR_CPCS;}
+//	MIPStimer::SR[8] &= ~(TC_SR_CPAS | TC_SR_CPBS | TC_SR_CPCS);
 }

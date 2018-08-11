@@ -25,10 +25,10 @@ const char *Thread::getName(void)
    return(Name.c_str());
 }
 
-void Thread::runned(long time){
+void Thread::runned(long time)
+{
 	// If less than 0, than get current ticks
-	if(time < 0)
-		time = millis();
+	if(time < 0) time = millis();
 
 	// Saves last_run
 	last_run = time;
@@ -50,11 +50,15 @@ void Thread::setNextRunTime(long _nextTime){
 	_cached_next_run = _nextTime;
 }
 
-bool Thread::shouldRun(long time){
-	// If less than 0, than get current ticks
-	if(time < 0)
-		time = millis();
+bool Thread::shouldRun(long time)
+{
+	// If less than 0, then get current ticks
+	if(time < 0) time = millis();
 
+    // Added by GAA, 3/1/18. In case millisec timer is reset
+    // Force it to run if time is less that the last run time.
+//    if(time < last_run) _cached_next_run = time;
+    
 	// Exceeded the time limit, AND is enabled? Then should run...
 	return ((time >= _cached_next_run) && enabled);
 }
