@@ -1,5 +1,6 @@
 #include <Arduino.h>
 #include <inttypes.h>
+#include <Wire.h>
 
 #define SB_SIZE 512
 
@@ -9,6 +10,7 @@ class SerialBuffer: public Stream
       SerialBuffer();
       ~SerialBuffer();
       void begin();
+      void begin(TwoWire *twi, uint8_t add);
 	  virtual size_t write(uint8_t);
 	  virtual size_t write(const uint8_t *, size_t);
 	  virtual int available(void);
@@ -21,4 +23,6 @@ class SerialBuffer: public Stream
       uint16_t head;
       uint16_t tail;
       uint16_t sbsize;
+      TwoWire  *wire;
+      uint8_t  twiadd;
 };

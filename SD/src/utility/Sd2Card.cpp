@@ -114,7 +114,10 @@ uint8_t Sd2Card::cardCommand(uint8_t cmd, uint32_t arg) {
 
   // select card
   chipSelectHigh();
-  spiRec();
+  spiRec();				// Generate 8 clock cycles, add by GAA, Dec 2017
+  spiRec();				// Added 24 additional clocks Aug 2018, some disks still failed
+  spiRec();	
+  spiRec();	
   chipSelectLow();
 
   // wait up to 300 ms if busy

@@ -12,10 +12,19 @@ SerialBuffer::~SerialBuffer()
 void SerialBuffer::begin()
 {
    tail = head = sbsize = 0;
+   wire = NULL;
+}
+
+void SerialBuffer::begin(TwoWire *twi, uint8_t add)
+{
+   tail = head = sbsize = 0;
+   wire = twi;
+   twiadd = add;
 }
 
 size_t SerialBuffer::write(uint8_t by)
 {
+   if(sbsize > SB_SIZE/2) flush();
    if(sbsize == SB_SIZE) return(0);  // Full!
    buf[head++] = by;
    if(head >= SB_SIZE) head = 0;
@@ -27,6 +36,7 @@ size_t SerialBuffer::write(uint8_t by)
 
 size_t SerialBuffer::write(const uint8_t *ch, size_t sz)
 {
+   if(sbsize > SB_SIZE/2) flush();
    if(sbsize == SB_SIZE) return(0);  // Full!
    // Insert characters at head pointer
    int num = 0;
@@ -66,5 +76,17 @@ int SerialBuffer::peek(void)
 
 void SerialBuffer::flush(void)
 {
+   // If wire channel is defined and the buffer is not
+   // empty then send chars
+   if((wire != NULL) && (available() > 0))
+   {
+      wire->beginTransmission(twiadd);
+      for(int i=0;i<30;i++)
+      {
+         if(available() > 0) wire->write(read());
+         else break;
+      }
+      wire->endTransmission();
+   }
 }
 
