@@ -25,6 +25,7 @@ public:
     DIhandler(void);
     ~DIhandler(void);
 	bool attached(char DI, int mode,void (*isr)(void));	// Attaches an ISR, true if it was able to do
+	bool isAttached(void);
 	void detach(void);      // Detaches if posible, if the DI is chained it may not be posible to release
     void setPriority(uint8_t pri);
     void setPriority(char DI, uint8_t pri);

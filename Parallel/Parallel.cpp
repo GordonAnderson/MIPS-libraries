@@ -31,6 +31,9 @@
   You should have received a copy of the GNU Lesser General Public
   License along with this library; if not, write to the Free Software
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+  
+  GAA May 22, 2019
+  - Added support for 16 bit mapping
 */
 
 #include "Parallel.h"
@@ -117,13 +120,13 @@ const uint32_t chipSelectAddresses[] =
 	0x63000000
 };
 
-void ParallelClass::begin(  ParallelBusWidth_t width, 
-							              ParallelChipSelect_t cs, 
-							              uint8_t numAddressLines, 
-							              uint8_t readEnable, 
-							              uint8_t writeEnable)
+void ParallelClass::begin( ParallelBusWidth_t width, 
+						   ParallelChipSelect_t cs, 
+						   uint8_t numAddressLines, 
+						   uint8_t readEnable, 
+						   uint8_t writeEnable)
 {	
-	uint8_t dataPinCount = 0;
+//	uint8_t dataPinCount = 0;
 	
 	// Save the chip select
 	_cs = cs;
@@ -199,9 +202,18 @@ void ParallelClass::begin(  ParallelBusWidth_t width,
 	pmc_enable_periph_clk(ID_SMC);
 	
 	// set mode
-	smc_set_mode(SMC, _cs, SMC_MODE_READ_MODE
-		| SMC_MODE_WRITE_MODE
-		| SMC_MODE_DBW_BIT_8);
+	if (width == PARALLEL_BUS_WIDTH_16)
+	{
+	   smc_set_mode(SMC, _cs, SMC_MODE_READ_MODE
+		   | SMC_MODE_WRITE_MODE
+		   | SMC_MODE_DBW_BIT_16);
+	}
+	else
+	{
+	   smc_set_mode(SMC, _cs, SMC_MODE_READ_MODE
+		   | SMC_MODE_WRITE_MODE
+		   | SMC_MODE_DBW_BIT_8);
+    }
 }
 
 // Configure the address setup time.  See datasheet for calculations
@@ -239,9 +251,18 @@ void ParallelClass::setCycleTiming( uint8_t cyclesWriteTotal,
 // Set how the which signals latch data in the read and write modes (NCS or NRD/NWE).
 void ParallelClass::setMode(ReadModeFlags_t readMode, WriteModeFlags_t writeMode)
 {
-	smc_set_mode(SMC, _cs, readMode
-		| writeMode
-		| SMC_MODE_DBW_BIT_8);	// we only support 8-bit bus
+    if(dataPinCount == 16)
+    {
+   	   smc_set_mode(SMC, _cs, readMode
+		   | writeMode
+		   | SMC_MODE_DBW_BIT_16);
+    }
+    else
+    {
+   	   smc_set_mode(SMC, _cs, readMode
+		   | writeMode
+		   | SMC_MODE_DBW_BIT_8);
+    }
 }
 
 __attribute__((optimize("O0"))) void ParallelClass::write(uint32_t offset, uint8_t data)

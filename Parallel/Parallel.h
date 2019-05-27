@@ -108,6 +108,7 @@ public:
 private:
   ParallelChipSelect_t _cs;
   uint32_t _addr;
+  uint8_t dataPinCount;
 };
 
 extern ParallelClass Parallel;

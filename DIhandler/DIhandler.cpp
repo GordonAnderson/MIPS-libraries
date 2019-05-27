@@ -87,6 +87,17 @@ bool DIhandler::attached(char DI, int Mode,void (*isr)(void))
    return true;
 }
 
+bool DIhandler::isAttached(void)
+{
+   int Index;
+   
+   if(di == 0) return false;
+   Index = di - 'Q';
+   if((Index < 0) || (Index > 7)) return false;
+   if(DI_ISR[Index] == NULL) return false;
+   return true;
+}
+
 void DIhandler::detach(void)
 {
    int Index,i;
