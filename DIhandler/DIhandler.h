@@ -17,6 +17,7 @@ public:
 	static  void (*DI_ISR[8])(void);  // Interrupt handelers
 	static  int NumHandlers;
 	static  DIhandler *handlers[MaxDIhandlers];
+	static  int NumInterrupts;
 	
 	char   di;				 // Digital input channel, Q - X
 	int    mode;		 	 // Mode used for this call back, Pos, Neg, or Change
