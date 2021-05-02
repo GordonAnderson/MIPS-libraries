@@ -33,6 +33,7 @@ uint32_t DIhandler::pin[8] = {g_APinDescription[30].ulPin,
 void (*DIhandler::DI_ISR[8])(void) = {NULL,NULL,NULL,NULL,NULL,NULL,NULL,NULL};
 void (*DI_ISRs[8])(void) = {DI_Q_ISR,DI_R_ISR,DI_S_ISR,DI_T_ISR,DI_U_ISR,DI_V_ISR,DI_W_ISR,DI_X_ISR};
 int DIhandler::NumHandlers = 0;
+int DIhandler::NumInterrupts = 0;
 DIhandler *DIhandler::handlers[MaxDIhandlers];
 
 DIhandler::DIhandler(void)
@@ -196,6 +197,7 @@ void DI_Generic_ISR(int Index)
    int i,pinstate = HIGH;
    void  (*userISRptr)(void);
    
+   DIhandler::NumInterrupts++;
 //   if((DIhandler::pio[Index]->PIO_ODSR & DIhandler::pin[Index]) == 0) pinstate = LOW;
    pinstate = digitalRead(DIhandler::DIpin[Index]);
    for(i=0;i<MaxDIhandlers;i++)

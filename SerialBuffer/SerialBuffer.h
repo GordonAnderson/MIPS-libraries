@@ -17,6 +17,7 @@ class SerialBuffer: public Stream
 	  virtual int read(void);
 	  virtual int peek(void);
 	  virtual void flush(void);
+	  virtual void clear(void);
 	  
    private:
       uint8_t  buf[SB_SIZE];

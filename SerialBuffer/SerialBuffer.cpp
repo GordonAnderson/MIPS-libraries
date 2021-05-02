@@ -9,6 +9,11 @@ SerialBuffer::~SerialBuffer()
 {
 }
 
+void SerialBuffer::clear()
+{
+   tail = head = sbsize = 0;
+}
+
 void SerialBuffer::begin()
 {
    tail = head = sbsize = 0;
