@@ -69,6 +69,7 @@ public:
 	MIPStimer begin();
 	MIPStimer stop();
 	MIPStimer stopOnRC();
+	MIPStimer nostopOnRC();
 	MIPStimer enableTrigger();
 	MIPStimer softwareTrigger();
 	MIPStimer setClock(uint32_t clock);
@@ -82,6 +83,7 @@ public:
     MIPStimer setRB(uint32_t count);
     MIPStimer incRB(uint32_t count);
     MIPStimer setRC(uint32_t count);
+    MIPStimer halt(bool state);
 
 	MIPStimer start(long microseconds = -1, uint8_t ClockDivisor = 0, bool NoInterrupts = false);
 	MIPStimer setFrequency(double frequency, uint8_t ClockDivisor = 0);

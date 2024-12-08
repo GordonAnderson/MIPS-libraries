@@ -45,7 +45,7 @@ size_t SerialBuffer::write(const uint8_t *ch, size_t sz)
    if(sbsize == SB_SIZE) return(0);  // Full!
    // Insert characters at head pointer
    int num = 0;
-   for(int i=0; i < sz; i++)
+   for(size_t i=0; i < sz; i++)
    {
       buf[head++] = ch[i];
       num++;
@@ -77,6 +77,7 @@ int SerialBuffer::read(void)
 
 int SerialBuffer::peek(void)
 {
+	return(0);
 }
 
 void SerialBuffer::flush(void)

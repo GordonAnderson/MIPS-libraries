@@ -168,6 +168,14 @@ MIPStimer MIPStimer::stopOnRC()
 	return *this;
 }
 
+MIPStimer MIPStimer::nostopOnRC()
+{
+	Timer t = Timers[timer];
+
+    t.tc->TC_CHANNEL[t.channel].TC_CMR &= ~TC_CMR_CPCSTOP;
+	return *this;
+}
+
 MIPStimer MIPStimer::enableTrigger()
 {
 	// Get current timer configuration
@@ -175,6 +183,18 @@ MIPStimer MIPStimer::enableTrigger()
 	
 	t.tc->TC_CHANNEL[t.channel].TC_CCR = TC_CCR_CLKEN;
     t.tc->TC_CHANNEL[t.channel].TC_CMR = (t.tc->TC_CHANNEL[t.channel].TC_CMR) | TC_CMR_ENETRG;
+}
+
+MIPStimer MIPStimer::halt(bool state)
+{
+	// Get current timer configuration
+	Timer t = Timers[timer];
+	
+	if(state) t.tc->TC_CHANNEL[t.channel].TC_CCR = 0x02;
+	else 
+	{
+	   t.tc->TC_CHANNEL[t.channel].TC_CCR = 0x01;
+	}
 }
 
 MIPStimer MIPStimer::softwareTrigger()
